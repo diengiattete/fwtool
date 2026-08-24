@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ESP32 Web Flasher (Offline - No CDN)</title>
+  <!-- Thư viện esptool-js nhúng trực tiếp bằng ES Module chuẩn -->
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #121212;
+      color: #e0e0e0;
+      padding: 20px;
+      margin: 0;
+    }
+    .container {
+      max-width: 650px;
+      margin: 0 auto;
+      background: #1e1e1e;
+      padding: 25px;
+      border-radius: 10px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+    }
+    h2 { color: #00ff66; text-align: center; margin-top: 0; }
+    .form-group { margin-bottom: 15px; }
+    label { display: block; margin-bottom: 6px; font-weight: bold; color: #aaa; font-size: 13px; }
+    input[type="file"], select {
+      width: 100%;
+      padding: 10px;
+      background: #2a2a2a;
+      border: 1px solid #444;
+      color: #fff;
+      border-radius: 6px;
+      box-sizing: border-box;
+    }
+    .btn-group { display: flex; gap: 10px; margin-top: 20px; }
+    button {
+      flex: 1;
+      padding: 12px;
+      font-size: 14px;
+      font-weight: bold;
+      cursor: pointer;
+      border: none;
+      border-radius: 6px;
+      transition: background 0.2s;
+    }
+    .btn-connect { background: #0288d1; color: white; }
+    .btn-flash { background: #2e7d32; color: white; }
+    button:disabled { background: #424242 !important; color: #757575; cursor: not-allowed; }
+    
+    .progress-bar-container {
+      width: 100%;
+      background: #2a2a2a;
+      border-radius: 6px;
+      height: 20px;
+      margin-top: 15px;
+      overflow: hidden;
+      display: none;
+    }
+    .progress-bar {
+      height: 100%;
+      width: 0%;
+      background: #00ff66;
+      transition: width 0.2s;
+      text-align: center;
+      font-size: 12px;
+      color: #000;
+      font-weight: bold;
+      line-height: 20px;
+    }
+
+    #log {
+      background: #000;
+      color: #00ff66;
+      font-family: 'Courier New', monospace;
+      padding: 12px;
+      border: 1px solid #333;
+      height: 220px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      font-size: 12px;
+      border-radius: 6px;
+      margin-top: 15px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h2>ESP32 USB Flasher (Web Serial)</h2>
+
+  <div class="form-group">
+    <label>1. CHỌN FILE FIRMWARE (.BIN)</label>
+    <input type="file" id="fileBinary" accept=".bin">
+  </div>
+
+  <div class="form-group">
+    <label>2. ĐỊA CHỈ FLASH OFFSET (Arduino ESP32 chọn 0x10000)</label>
+    <select id="flashOffset">
+      <option value="0x10000">0x10000 (Mặc định Arduino ESP32)</option>
+      <option value="0x0">0x00000 (ESP32-S3/C3 hoặc Merged Bin)</option>
+    </select>
+  </div>
+
+  <div class="form-group">
+    <label>3. TỐC ĐỘ NẠP (Baudrate)</label>
+    <select id="baudRate">
+      <option value="921600" selected>921600 (Nạp nhanh)</option>
+      <option value="460800">460800</option>
+      <option value="115200">115200 (An toàn)</option>
+    </select>
+  </div>
+
+  <div class="btn-group">
+    <button class="btn-connect" id="btnConnect">KẾT NỐI & DÒ CHIP</button>
+    <button class="btn-flash" id="btnFlash" disabled>NẠP FIRMWARE</button>
+  </div>
+
+  <div class="progress-bar-container" id="progressContainer">
+    <div class="progress-bar" id="progressBar">0%</div>
+  </div>
+
+  <div id="log"></div>
+</div>
+
+<script type="module">
+  import { ESPLoader, Transport } from "https://esm.sh/esptool-js@0.4.3";
+
+  let device = null;
+  let transport = null;
+  let esploader = null;
+  let fileBinaryData = null;
+
+  function appendLog(msg) {
+    const logDiv = document.getElementById('log');
+    logDiv.innerHTML += msg + "\n";
+    logDiv.scrollTop = logDiv.scrollHeight;
+  }
+
+  window.addEventListener('load', () => {
+    if (!("serial" in navigator)) {
+      appendLog("[ERROR] Trình duyệt không hỗ trợ Web Serial. Hãy dùng Google Chrome hoặc MS Edge!");
+      document.getElementById('btnConnect').disabled = true;
+    } else {
+      appendLog("[SYSTEM] Thư viện esptool-js đã tải thành công qua ESM module!");
+      appendLog("[SYSTEM] Sẵn sàng! Hãy cắm cáp USB nối ESP32 với máy tính.");
+    }
+  });
+
+  document.getElementById('fileBinary').addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      fileBinaryData = evt.target.result;
+      appendLog(`[FILE] Đã đọc file: ${file.name} (${file.size} bytes)`);
+    };
+    reader.readAsBinaryString(file);
+  });
+
+  document.getElementById('btnConnect').addEventListener('click', async () => {
+    try {
+      appendLog("[SYSTEM] Đang mở hộp thoại chọn cổng COM...");
+      device = await navigator.serial.requestPort();
+      
+      transport = new Transport(device);
+      const baud = parseInt(document.getElementById('baudRate').value);
+
+      esploader = new ESPLoader({
+        transport: transport,
+        baudrate: baud,
+        terminal: {
+          clean: () => {},
+          writeLine: (data) => appendLog(data),
+          write: (data) => appendLog(data)
+        }
+      });
+
+      appendLog("[SYSTEM] Đang kết nối Bootloader (Nếu dừng ở Connecting..., bấm giữ nút BOOT trên ESP32)...");
+      const chip = await esploader.main();
+      appendLog(`[SYSTEM] KẾT NỐI THÀNH CÔNG! Chip: ${chip}`);
+
+      document.getElementById('btnFlash').disabled = false;
+      document.getElementById('btnConnect').innerText = "ĐÃ KẾT NỐI CHIP";
+      document.getElementById('btnConnect').style.background = "#2e7d32";
+
+    } catch (err) {
+      appendLog("[ERROR] Lỗi kết nối COM/Bootloader: " + err.message);
+    }
+  });
+
+  document.getElementById('btnFlash').addEventListener('click', async () => {
+    if (!fileBinaryData) {
+      alert("Vui lòng chọn file .bin trước!");
+      return;
+    }
+
+    const offset = parseInt(document.getElementById('flashOffset').value, 16);
+    document.getElementById('btnFlash').disabled = true;
+    
+    const progressContainer = document.getElementById('progressContainer');
+    const progressBar = document.getElementById('progressBar');
+    progressContainer.style.display = 'block';
+
+    try {
+      appendLog("[FLASH] Bắt đầu xóa sector cũ và ghi dữ liệu...");
+
+      const fileArray = [{ data: fileBinaryData, address: offset }];
+
+      await esploader.writeFlash({
+        fileArray: fileArray,
+        flashSize: "keep",
+        eraseAll: false,
+        compress: true,
+        reportProgress: (fileIndex, written, total) => {
+          const percent = Math.round((written / total) * 100);
+          progressBar.style.width = percent + '%';
+          progressBar.innerText = percent + '%';
+        }
+      });
+
+      appendLog("[FLASH] >>> NẠP THÀNH CÔNG 100%! <<<");
+      appendLog("[SYSTEM] Đang khởi động lại ESP32...");
+      
+      await esploader.hardReset();
+      appendLog("[SYSTEM] ESP32 đã khởi động lại và đang chạy Firmware mới!");
+
+    } catch (err) {
+      appendLog("[ERROR] Lỗi nạp Flash: " + err.message);
+    } finally {
+      document.getElementById('btnFlash').disabled = false;
+    }
+  });
+</script>
+
+</body>
+</html>
