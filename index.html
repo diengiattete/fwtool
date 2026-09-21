@@ -356,48 +356,64 @@
     </main>
 
     <!-- HELP & TROUBLESHOOTING MODAL -->
-    <div id="help-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4">
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-2xl w-full p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto space-y-5">
-            <button onclick="toggleModal('help-modal')" class="absolute top-4 right-4 text-slate-400 hover:text-slate-100">
-                <i class="fa-solid fa-xmark text-lg"></i>
-            </button>
+<div id="help-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-2xl w-full p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto space-y-5">
+        <button onclick="toggleModal('help-modal')" class="absolute top-4 right-4 text-slate-400 hover:text-slate-100">
+            <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
 
-            <div class="flex items-center space-x-3">
-                <div class="p-2.5 rounded-xl bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
-                    <i class="fa-solid fa-circle-info text-xl"></i>
-                </div>
-                <div>
-                    <h3 class="text-lg font-bold text-slate-100">Hướng Dẫn Nạp Single-File Firmware</h3>
-                    <p class="text-xs text-slate-400">Hỗ trợ nạp 1 file ứng dụng hoặc file gộp duy nhất</p>
+        <div class="flex items-center space-x-3">
+            <div class="p-2.5 rounded-xl bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
+                <i class="fa-solid fa-circle-info text-xl"></i>
+            </div>
+            <div>
+                <h3 class="text-lg font-bold text-slate-100">Hướng Dẫn Nạp Single-File Firmware</h3>
+                <p class="text-xs text-slate-400">Hỗ trợ nạp 1 file ứng dụng hoặc file gộp duy nhất</p>
+            </div>
+        </div>
+
+        <div class="space-y-4 text-xs text-slate-300 leading-relaxed">
+            <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-2">
+                <h4 class="font-semibold text-cyan-400 flex items-center gap-2">
+                    <i class="fa-solid fa-triangle-exclamation"></i> Yêu cầu Trình Duyệt Web
+                </h4>
+                <p>Ứng dụng sử dụng chuẩn <strong>Web Serial API</strong>. Hãy chạy trên <strong>Google Chrome, Microsoft Edge, hoặc Opera</strong> trên máy tính.</p>
+            </div>
+
+            <div>
+                <h4 class="font-semibold text-slate-200 mb-2">Quy Trình Nạp Firmware Chuẩn:</h4>
+                <ol class="list-decimal list-inside space-y-1.5 text-slate-400 pl-1">
+                    <li>Cắm mạch ESP qua cáp USB vào máy tính.</li>
+                    <li>Nút <strong class="text-slate-200">KẾT NỐI & ĐỌC CHI TIẾT CHIP</strong> ➔ Hệ thống sẽ đọc thông số chi tiết và lấy dữ liệu cập nhật từ mạng.</li>
+                    <li>Chọn duy nhất 1 file `.bin` firmware.</li>
+                    <li>Bấm nút <strong class="text-emerald-400">BẮT ĐẦU NẠP FIRMWARE</strong> và đợi 100%.</li>
+                </ol>
+            </div>
+
+            <!-- Bổ sung khối Tải Driver WCH CH340 / CH341 -->
+            <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-2">
+                <h4 class="font-semibold text-amber-400 flex items-center gap-2">
+                    <i class="fa-solid fa-download"></i> Tải Driver USB Serial (Nếu chưa nhận cổng COM)
+                </h4>
+                <p class="text-slate-400">Nếu cắm mạch vào máy tính mà không thấy hiện cổng COM, bạn hãy tải và cài đặt Driver chính hãng WCH CH340/CH341 dưới đây:</p>
+                <div class="flex flex-wrap gap-2 pt-1">
+                    <a href="https://www.wch-ic.com/download/file?id=65" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500/10 text-amber-400 border border-amber-500/20 hover:bg-amber-500/20 transition-colors font-medium">
+                        <i class="fa-brands fa-windows"></i> Driver Windows (EXE)
+                    </a>
+                    <a href="https://www.wch-ic.com/downloads/CH341SER_MAC_ZIP.html" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500/10 text-amber-400 border border-amber-500/20 hover:bg-amber-500/20 transition-colors font-medium">
+                        <i class="fa-brands fa-apple"></i> Driver macOS (ZIP)
+                    </a>
                 </div>
             </div>
 
-            <div class="space-y-4 text-xs text-slate-300 leading-relaxed">
-                <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-2">
-                    <h4 class="font-semibold text-cyan-400 flex items-center gap-2">
-                        <i class="fa-solid fa-triangle-exclamation"></i> Yêu cầu Trình Duyệt Web
-                    </h4>
-                    <p>Ứng dụng sử dụng chuẩn <strong>Web Serial API</strong>. Hãy chạy trên <strong>Google Chrome, Microsoft Edge, hoặc Opera</strong> trên máy tính.</p>
-                </div>
-
-                <div>
-                    <h4 class="font-semibold text-slate-200 mb-2">Quy Trình Nạp Firmware Chuẩn:</h4>
-                    <ol class="list-decimal list-inside space-y-1.5 text-slate-400 pl-1">
-                        <li>Cắm mạch ESP qua cáp USB vào máy tính.</li>
-                        <li>Nút <strong class="text-slate-200">KẾT NỐI & ĐỌC CHI TIẾT CHIP</strong> ➔ Hệ thống sẽ đọc thông số chi tiết và lấy dữ liệu cập nhật từ mạng.</li>
-                        <li>Chọn duy nhất 1 file `.bin` firmware.</li>
-                        <li>Bấm nút <strong class="text-emerald-400">BẮT ĐẦU NẠP FIRMWARE</strong> và đợi 100%.</li>
-                    </ol>
-                </div>
-
-                <div class="pt-2 border-t border-slate-800 flex justify-end">
-                    <button onclick="toggleModal('help-modal')" class="px-5 py-2 rounded-xl bg-cyan-500 text-slate-950 font-semibold hover:bg-cyan-400 transition-colors">
-                        Đã Hiểu
-                    </button>
-                </div>
+            <div class="pt-2 border-t border-slate-800 flex justify-end">
+                <button onclick="toggleModal('help-modal')" class="px-5 py-2 rounded-xl bg-cyan-500 text-slate-950 font-semibold hover:bg-cyan-400 transition-colors">
+                    Đã Hiểu
+                </button>
             </div>
         </div>
     </div>
+</div>
 
     <!-- FOOTER -->
 <footer class="border-t border-slate-800 bg-slate-950 py-4 text-center text-xs text-slate-500 mt-auto">
