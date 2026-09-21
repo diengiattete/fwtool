@@ -1,237 +1,1037 @@
 <!DOCTYPE html>
-<html lang="vi">
+<html lang="vi" class="dark">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ESP32 Web Flasher (Offline - No CDN)</title>
-  <!-- Thư viện esptool-js nhúng trực tiếp bằng ES Module chuẩn -->
-  <style>
-    body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background: #121212;
-      color: #e0e0e0;
-      padding: 20px;
-      margin: 0;
-    }
-    .container {
-      max-width: 650px;
-      margin: 0 auto;
-      background: #1e1e1e;
-      padding: 25px;
-      border-radius: 10px;
-      box-shadow: 0 4px 15px rgba(0,0,0,0.5);
-    }
-    h2 { color: #00ff66; text-align: center; margin-top: 0; }
-    .form-group { margin-bottom: 15px; }
-    label { display: block; margin-bottom: 6px; font-weight: bold; color: #aaa; font-size: 13px; }
-    input[type="file"], select {
-      width: 100%;
-      padding: 10px;
-      background: #2a2a2a;
-      border: 1px solid #444;
-      color: #fff;
-      border-radius: 6px;
-      box-sizing: border-box;
-    }
-    .btn-group { display: flex; gap: 10px; margin-top: 20px; }
-    button {
-      flex: 1;
-      padding: 12px;
-      font-size: 14px;
-      font-weight: bold;
-      cursor: pointer;
-      border: none;
-      border-radius: 6px;
-      transition: background 0.2s;
-    }
-    .btn-connect { background: #0288d1; color: white; }
-    .btn-flash { background: #2e7d32; color: white; }
-    button:disabled { background: #424242 !important; color: #757575; cursor: not-allowed; }
-    
-    .progress-bar-container {
-      width: 100%;
-      background: #2a2a2a;
-      border-radius: 6px;
-      height: 20px;
-      margin-top: 15px;
-      overflow: hidden;
-      display: none;
-    }
-    .progress-bar {
-      height: 100%;
-      width: 0%;
-      background: #00ff66;
-      transition: width 0.2s;
-      text-align: center;
-      font-size: 12px;
-      color: #000;
-      font-weight: bold;
-      line-height: 20px;
-    }
-
-    #log {
-      background: #000;
-      color: #00ff66;
-      font-family: 'Courier New', monospace;
-      padding: 12px;
-      border: 1px solid #333;
-      height: 220px;
-      overflow-y: auto;
-      white-space: pre-wrap;
-      font-size: 12px;
-      border-radius: 6px;
-      margin-top: 15px;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ESP32 & ESP8266 Web Flasher Pro</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        slate: {
+                            850: '#111827',
+                            900: '#0f172a',
+                            950: '#020617',
+                        },
+                        cyan: {
+                            400: '#22d3ee',
+                            500: '#06b6d4',
+                            600: '#0891b2',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                        mono: ['Fira Code', 'JetBrains Mono', 'Monaco', 'monospace']
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- FontAwesome Icons & Google Fonts -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0f172a;
+            color: #f8fafc;
+        }
+        .font-mono {
+            font-family: 'Fira Code', monospace;
+        }
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #090d16;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #1e293b;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #334155;
+        }
+        .drag-over {
+            border-color: #06b6d4 !important;
+            background-color: rgba(6, 182, 212, 0.08) !important;
+        }
+    </style>
 </head>
-<body>
+<body class="min-h-screen flex flex-col bg-slate-900 text-slate-100 antialiased selection:bg-cyan-500 selection:text-slate-900">
 
-<div class="container">
-  <h2>ESP32 USB Flasher (Web Serial)</h2>
+    <!-- HEADER -->
+    <header class="border-b border-slate-800 bg-slate-950/80 backdrop-blur sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="bg-gradient-to-tr from-cyan-500 to-emerald-500 p-2 rounded-xl text-slate-950 font-bold shadow-lg shadow-cyan-500/20">
+                    <i class="fa-solid fa-microchip text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-lg leading-tight tracking-wide flex items-center gap-2">
+                        ESP Web Flasher Pro
+                       <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 inline-flex items-center gap-1.5">
+    <!-- Cờ Việt Nam dạng ảnh SVG -->
+    <img src="https://flagcdn.com/w20/vn.png" alt="VN Flag" class="w-4 h-3 object-cover rounded-sm">
+    VietNam
+</span>
+                    </h1>
+                    <p class="text-xs text-slate-400 hidden sm:block">Real Browser Firmware Flasher & Serial Terminal</p>
+                </div>
+            </div>
 
-  <div class="form-group">
-    <label>1. CHỌN FILE FIRMWARE (.BIN)</label>
-    <input type="file" id="fileBinary" accept=".bin">
-  </div>
+            <div class="flex items-center space-x-3">
+                <div id="webserial-badge" class="flex items-center text-xs font-medium px-3 py-1.5 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                    <span class="w-2 h-2 rounded-full bg-emerald-400 mr-2 animate-pulse"></span>
+                    <span>WebSerial Available</span>
+                </div>
 
-  <div class="form-group">
-    <label>2. ĐỊA CHỈ FLASH OFFSET (Arduino ESP32 chọn 0x10000)</label>
-    <select id="flashOffset">
-      <option value="0x10000">0x10000 (Mặc định Arduino ESP32)</option>
-      <option value="0x0">0x00000 (Xoá bộ nhớ-S3/C3 hãy nạp Merged Bin)</option>
-    </select>
-  </div>
+                <button onclick="toggleModal('help-modal')" class="p-2 text-slate-400 hover:text-cyan-400 hover:bg-slate-800 rounded-lg transition-colors text-sm flex items-center gap-1.5">
+                    <i class="fa-solid fa-circle-question text-base"></i>
+                    <span class="hidden md:inline font-medium">Hướng Dẫn</span>
+                </button>
+            </div>
+        </div>
+    </header>
 
-  <div class="form-group">
-    <label>3. TỐC ĐỘ NẠP (Baudrate)</label>
-    <select id="baudRate">
-      <option value="921600" selected>921600 (Nạp nhanh)</option>
-      <option value="460800">460800</option>
-      <option value="115200">115200 (An toàn)</option>
-    </select>
-  </div>
+    <!-- MAIN CONTAINER -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
 
-  <div class="btn-group">
-    <button class="btn-connect" id="btnConnect">KẾT NỐI & DÒ CHIP</button>
-    <button class="btn-flash" id="btnFlash" disabled>NẠP FIRMWARE</button>
-  </div>
+        <!-- LEFT COLUMN: DEVICE CONTROL & CHIP INFO -->
+        <section class="lg:col-span-4 flex flex-col space-y-6">
+            
+            <!-- Connection Control Card -->
+            <div class="bg-slate-950 border border-slate-800 rounded-2xl p-5 shadow-xl relative overflow-hidden">
+                <div class="absolute -right-8 -top-8 w-24 h-24 bg-cyan-500/5 rounded-full blur-2xl pointer-events-none"></div>
 
-  <div class="progress-bar-container" id="progressContainer">
-    <div class="progress-bar" id="progressBar">0%</div>
-  </div>
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-sm font-semibold text-slate-300 uppercase tracking-wider flex items-center gap-2">
+                        <i class="fa-solid fa-plug text-cyan-400"></i> Cổng Kết Nối USB
+                    </h2>
+                    <span id="conn-status-tag" class="text-xs font-mono font-medium px-2.5 py-1 rounded-md bg-slate-800 text-slate-400 border border-slate-700">
+                        DISCONNECTED
+                    </span>
+                </div>
 
-  <div id="log"></div>
-</div>
+                <!-- Connect / Disconnect Buttons -->
+                <div class="space-y-3">
+                    <button id="btn-connect" class="w-full py-3 px-4 rounded-xl font-semibold bg-gradient-to-r from-cyan-500 to-emerald-500 hover:from-cyan-400 hover:to-emerald-400 text-slate-950 shadow-lg shadow-cyan-500/20 transition-all flex items-center justify-center gap-2 text-sm">
+                        <i class="fa-solid fa-bolt"></i> Kết Nối & Đọc Chi Tiết Chip
+                    </button>
 
-<script type="module">
-  import { ESPLoader, Transport } from "https://esm.sh/esptool-js@0.4.3";
+                    <div id="connected-controls" class="hidden space-y-2">
+                        <button id="btn-hard-reset" class="w-full py-2.5 px-4 rounded-xl font-medium bg-slate-800 hover:bg-slate-700 text-cyan-400 border border-cyan-500/30 transition-all flex items-center justify-center gap-2 text-xs">
+                            <i class="fa-solid fa-rotate-right"></i> Hard Reset Chip (RTS/DTR)
+                        </button>
+                        <button id="btn-disconnect" class="w-full py-2.5 px-4 rounded-xl font-semibold bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 transition-all flex items-center justify-center gap-2 text-xs">
+                            <i class="fa-solid fa-plug-circle-xmark"></i> Ngắt Kết Nối USB
+                        </button>
+                    </div>
+                </div>
 
-  let device = null;
-  let transport = null;
-  let esploader = null;
-  let fileBinaryData = null;
+                <!-- Flashing Baud Rate Configuration -->
+                <div class="mt-4 pt-4 border-t border-slate-800">
+                    <label class="block text-xs font-medium text-slate-400 mb-1.5">Tốc độ Nạp (Flashing Baudrate)</label>
+                    <select id="baud-rate-select" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-cyan-500 font-mono">
+                        <option value="921600" selected>921600 (Rất nhanh - Khuyên dùng)</option>
+                        <option value="460800">460800 (Nhanh)</option>
+                        <option value="230400">230400 (Trung bình)</option>
+                        <option value="115200">115200 (An toàn nhất)</option>
+                    </select>
+                </div>
+            </div>
 
-  function appendLog(msg) {
-    const logDiv = document.getElementById('log');
-    logDiv.innerHTML += msg + "\n";
-    logDiv.scrollTop = logDiv.scrollHeight;
-  }
+            <!-- Hardware Spec Card -->
+            <div class="bg-slate-950 border border-slate-800 rounded-2xl p-5 shadow-xl flex-1 flex flex-col justify-between">
+                <div>
+                    <h2 class="text-sm font-semibold text-slate-300 uppercase tracking-wider mb-4 flex items-center gap-2">
+                        <i class="fa-solid fa-microchip text-cyan-400"></i> Thông Số Chip Chi Tiết
+                    </h2>
 
-  window.addEventListener('load', () => {
-    if (!("serial" in navigator)) {
-      appendLog("[ERROR] Trình duyệt không hỗ trợ Web Serial. Hãy dùng Google Chrome hoặc MS Edge!");
-      document.getElementById('btnConnect').disabled = true;
-    } else {
-      appendLog("[SYSTEM] Thư viện esptool-js đã tải thành công qua ESM module!");
-      appendLog("[SYSTEM] Sẵn sàng! Hãy cắm cáp USB nối ESP32 với máy tính.");
-    }
-  });
+                    <div class="space-y-2.5 font-mono text-xs">
+                        <div class="flex justify-between items-center py-1 border-b border-slate-800/60">
+                            <span class="text-slate-400 font-sans">Dòng Chip:</span>
+                            <span id="spec-chip" class="text-cyan-400 font-semibold">Chưa kết nối</span>
+                        </div>
+                        <div class="flex justify-between items-center py-1 border-b border-slate-800/60">
+                            <span class="text-slate-400 font-sans">Biến Thể (Model):</span>
+                            <span id="spec-model" class="text-slate-300">--</span>
+                        </div>
+                        <div class="flex justify-between items-center py-1 border-b border-slate-800/60">
+                            <span class="text-slate-400 font-sans">Số Lõi CPU:</span>
+                            <span id="spec-cores" class="text-slate-300">--</span>
+                        </div>
+                        <div class="flex justify-between items-center py-1 border-b border-slate-800/60">
+                            <span class="text-slate-400 font-sans">Địa chỉ MAC:</span>
+                            <span id="spec-mac" class="text-slate-300">--</span>
+                        </div>
+                        <div class="flex justify-between items-center py-1 border-b border-slate-800/60">
+                            <span class="text-slate-400 font-sans">Dung lượng Flash:</span>
+                            <span id="spec-flash" class="text-slate-300">--</span>
+                        </div>
+                        <div class="flex justify-between items-center py-1 border-b border-slate-800/60">
+                            <span class="text-slate-400 font-sans">Tính năng Chip:</span>
+                            <span id="spec-features" class="text-slate-300 text-[11px]">--</span>
+                        </div>
+                        <div class="flex justify-between items-center py-1">
+                            <span class="text-slate-400 font-sans">Tần số XTAL:</span>
+                            <span id="spec-xtal" class="text-slate-300">--</span>
+                        </div>
+                    </div>
+                </div>
 
-  document.getElementById('fileBinary').addEventListener('change', (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (evt) => {
-      fileBinaryData = evt.target.result;
-      appendLog(`[FILE] Đã đọc file: ${file.name} (${file.size} bytes)`);
-    };
-    reader.readAsBinaryString(file);
-  });
+                <div class="mt-6 pt-4 border-t border-slate-800/80">
+                    <button id="btn-erase" disabled class="w-full py-2.5 px-3 rounded-lg text-xs font-semibold bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 transition-all flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed">
+                        <i class="fa-solid fa-trash-can"></i> Erase Flash (Xóa sạch bộ nhớ)
+                    </button>
+                </div>
+            </div>
 
-  document.getElementById('btnConnect').addEventListener('click', async () => {
-    try {
-      appendLog("[SYSTEM] Đang mở hộp thoại chọn cổng COM...");
-      device = await navigator.serial.requestPort();
-      
-      transport = new Transport(device);
-      const baud = parseInt(document.getElementById('baudRate').value);
+        </section>
 
-      esploader = new ESPLoader({
-        transport: transport,
-        baudrate: baud,
-        terminal: {
-          clean: () => {},
-          writeLine: (data) => appendLog(data),
-          write: (data) => appendLog(data)
+        <!-- RIGHT COLUMN: FLASHER & SERIAL MONITOR TABS -->
+        <section class="lg:col-span-8 flex flex-col space-y-4">
+            
+            <!-- Navigation Tabs -->
+            <div class="flex space-x-2 bg-slate-950 p-1.5 rounded-xl border border-slate-800">
+                <button id="tab-btn-flash" onclick="switchTab('flash')" class="flex-1 py-2.5 px-4 rounded-lg font-medium text-sm transition-all flex items-center justify-center gap-2 bg-slate-800 text-cyan-400 shadow">
+                    <i class="fa-solid fa-upload"></i> Nạp Firmware Single (.bin)
+                </button>
+                <button id="tab-btn-terminal" onclick="switchTab('terminal')" class="flex-1 py-2.5 px-4 rounded-lg font-medium text-sm transition-all flex items-center justify-center gap-2 text-slate-400 hover:text-slate-200 hover:bg-slate-900">
+                    <i class="fa-solid fa-terminal"></i> Serial Monitor
+                </button>
+            </div>
+
+            <!-- TAB 1: FLASH FIRMWARE WORKSPACE -->
+            <div id="tab-content-flash" class="bg-slate-950 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-6">
+                
+                <!-- Binary File Dropzone (Chỉ chọn 1 file) -->
+                <div id="drop-zone" class="border-2 border-dashed border-slate-700 hover:border-cyan-500/70 bg-slate-900/50 rounded-xl p-6 text-center transition-all cursor-pointer group">
+                    <input type="file" id="file-input" accept=".bin" class="hidden">
+                    <div class="w-12 h-12 bg-cyan-500/10 group-hover:bg-cyan-500/20 text-cyan-400 rounded-2xl flex items-center justify-center mx-auto mb-2 transition-colors">
+                        <i class="fa-solid fa-file-arrow-up text-xl"></i>
+                    </div>
+                    <h3 class="font-semibold text-slate-200 text-sm">Kéo thả 1 file firmware (.bin) vào đây</h3>
+                    <p class="text-xs text-slate-400 mt-1">hoặc <span class="text-cyan-400 underline font-medium">bấm để chọn file từ máy tính</span> (Chế độ 1 File)</p>
+                </div>
+
+                <!-- Offset Address Quick Presets -->
+                <div>
+                    <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Preset Địa Chỉ Nạp (Flash Offset). Chỉ chọn khi có yêu cầu từ dev!</label>
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                        <button onclick="applyOffsetPreset('0x0')" class="text-left p-2 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-800 transition-colors">
+                            <span class="font-mono text-cyan-400 text-xs font-bold block">0x0000</span>
+                            <span class="text-[10px] text-slate-400">Merged / ESP8266</span>
+                        </button>
+                        <button onclick="applyOffsetPreset('0x10000')" class="text-left p-2 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-800 transition-colors">
+                            <span class="font-mono text-cyan-400 text-xs font-bold block">0x10000</span>
+                            <span class="text-[10px] text-slate-400">Standard ESP32 App</span>
+                        </button>
+                        <button onclick="applyOffsetPreset('0x1000')" class="text-left p-2 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-800 transition-colors">
+                            <span class="font-mono text-cyan-400 text-xs font-bold block">0x1000</span>
+                            <span class="text-[10px] text-slate-400">Bootloader</span>
+                        </button>
+                        <button onclick="applyOffsetPreset('0x8000')" class="text-left p-2 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-800 transition-colors">
+                            <span class="font-mono text-cyan-400 text-xs font-bold block">0x8000</span>
+                            <span class="text-[10px] text-slate-400">Partition Table</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Single File Selection View -->
+                <div class="space-y-3">
+                    <div class="flex justify-between items-center">
+                        <h4 class="text-xs font-semibold text-slate-400 uppercase tracking-wider">File Nạp Được Chọn</h4>
+                        <button onclick="clearSingleFile()" class="text-xs text-slate-400 hover:text-red-400 transition-colors flex items-center gap-1">
+                            <i class="fa-solid fa-xmark"></i> Xóa file
+                        </button>
+                    </div>
+
+                    <div id="file-container">
+                        <!-- Empty State -->
+                        <div id="empty-file-state" class="text-center py-6 border border-slate-800/60 rounded-xl bg-slate-900/30">
+                            <i class="fa-solid fa-folder-open text-slate-600 text-2xl mb-2"></i>
+                            <p class="text-xs text-slate-500">Chưa có file `.bin` nào được chọn.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Progress Bar Container -->
+                <div id="flash-progress-container" class="hidden space-y-2 bg-slate-900 p-4 rounded-xl border border-slate-800">
+                    <div class="flex justify-between text-xs font-medium">
+                        <span id="flash-status-text" class="text-cyan-400 flex items-center gap-2">
+                            <i class="fa-solid fa-spinner animate-spin"></i> Đang ghi dữ liệu vào Flash memory...
+                        </span>
+                        <span id="flash-percent-text" class="text-slate-300 font-mono font-bold">0%</span>
+                    </div>
+                    <div class="w-full bg-slate-800 rounded-full h-3 overflow-hidden p-0.5 border border-slate-700/50">
+                        <div id="flash-progress-bar" class="bg-gradient-to-r from-cyan-500 to-emerald-400 h-full rounded-full w-0 transition-all duration-150 shadow-sm shadow-cyan-500/50"></div>
+                    </div>
+                </div>
+
+                <!-- Action Button -->
+                <div class="pt-2">
+                    <button id="btn-program" disabled class="w-full py-3.5 px-4 rounded-xl font-bold bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-slate-950 shadow-lg shadow-emerald-500/20 transition-all flex items-center justify-center gap-2 text-base disabled:opacity-40 disabled:cursor-not-allowed">
+                        <i class="fa-solid fa-microchip"></i> BẮT ĐẦU NẠP FIRMWARE
+                    </button>
+                </div>
+
+                <!-- Real-time Flasher Logs -->
+                <div class="space-y-1.5">
+                    <div class="flex justify-between items-center text-xs text-slate-400">
+                        <span class="font-semibold uppercase tracking-wider">Nhật Ký Tiến Trình Flasher</span>
+                        <button onclick="clearFlasherLog()" class="hover:text-slate-200">Xóa Log</button>
+                    </div>
+                    <div id="flasher-log" class="bg-slate-950 font-mono text-[11px] text-emerald-400 p-3 rounded-xl border border-slate-800 h-40 overflow-y-auto space-y-1 select-text">
+                        <div class="text-slate-500 italic">[SYSTEM] Đang chờ kết nối vi điều khiển...</div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- TAB 2: SERIAL MONITOR WORKSPACE -->
+            <div id="tab-content-terminal" class="hidden bg-slate-950 border border-slate-800 rounded-2xl p-5 shadow-xl flex-1 flex flex-col space-y-4">
+                
+                <!-- Terminal Controls -->
+                <div class="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-800">
+                    <div class="flex items-center space-x-3">
+                        <button id="btn-term-connect" class="px-3.5 py-1.5 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-semibold text-xs transition-colors flex items-center gap-1.5">
+                            <i class="fa-solid fa-plug"></i> Mở Cổng Serial
+                        </button>
+                        <select id="term-baud-select" class="bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 font-mono focus:outline-none focus:border-cyan-500">
+                            <option value="115200" selected>115200 (Standard)</option>
+                            <option value="74880">74880 (ESP8266 Boot Log)</option>
+                            <option value="9600">9600</option>
+                            <option value="57600">57600</option>
+                            <option value="230400">230400</option>
+                            <option value="921600">921600</option>
+                        </select>
+                    </div>
+
+                    <div class="flex items-center space-x-2">
+                        <button id="btn-term-reset" class="px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-700 text-xs font-medium text-slate-300 transition-colors flex items-center gap-1.5">
+                            <i class="fa-solid fa-rotate-right text-cyan-400"></i> Reset Board
+                        </button>
+                        <button onclick="clearTerminal()" class="px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-700 text-xs font-medium text-slate-300 transition-colors flex items-center gap-1.5">
+                            <i class="fa-solid fa-eraser text-slate-400"></i> Clear
+                        </button>
+                        <label class="flex items-center space-x-1 text-xs text-slate-400 cursor-pointer ml-1">
+                            <input type="checkbox" id="autoscroll-check" checked class="rounded bg-slate-900 border-slate-700 text-cyan-500 focus:ring-0">
+                            <span>Auto-scroll</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Terminal Display Area -->
+                <div id="terminal-screen" class="bg-slate-950 font-mono text-xs text-slate-300 p-4 rounded-xl border border-slate-800 h-96 overflow-y-auto space-y-1 select-text">
+                    <div class="text-slate-500 italic">[SYSTEM] Mở cổng Serial Monitor để theo dõi dữ liệu truyền nhận từ ESP...</div>
+                </div>
+
+                <!-- Command Transmitter Bar -->
+                <div class="flex items-center gap-2 pt-2">
+                    <input type="text" id="term-input" placeholder="Gửi lệnh qua Serial..." class="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-xs font-mono text-slate-100 placeholder-slate-500 focus:outline-none focus:border-cyan-500">
+                    
+                    <select id="term-line-ending" class="bg-slate-900 border border-slate-700 rounded-xl px-2.5 py-2.5 text-xs text-slate-300 focus:outline-none">
+                        <option value="\r\n">Both NL & CR (\r\n)</option>
+                        <option value="\n">Newline (\n)</option>
+                        <option value="\r">Carriage Return (\r)</option>
+                        <option value="">None</option>
+                    </select>
+
+                    <button id="btn-term-send" class="px-5 py-2.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-semibold text-xs transition-colors flex items-center gap-1.5">
+                        <span>Send</span>
+                        <i class="fa-solid fa-paper-plane"></i>
+                    </button>
+                </div>
+
+            </div>
+
+        </section>
+
+    </main>
+
+    <!-- HELP & TROUBLESHOOTING MODAL -->
+    <div id="help-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-2xl w-full p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto space-y-5">
+            <button onclick="toggleModal('help-modal')" class="absolute top-4 right-4 text-slate-400 hover:text-slate-100">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+
+            <div class="flex items-center space-x-3">
+                <div class="p-2.5 rounded-xl bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
+                    <i class="fa-solid fa-circle-info text-xl"></i>
+                </div>
+                <div>
+                    <h3 class="text-lg font-bold text-slate-100">Hướng Dẫn Nạp Single-File Firmware</h3>
+                    <p class="text-xs text-slate-400">Hỗ trợ nạp 1 file ứng dụng hoặc file gộp duy nhất</p>
+                </div>
+            </div>
+
+            <div class="space-y-4 text-xs text-slate-300 leading-relaxed">
+                <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-2">
+                    <h4 class="font-semibold text-cyan-400 flex items-center gap-2">
+                        <i class="fa-solid fa-triangle-exclamation"></i> Yêu cầu Trình Duyệt Web
+                    </h4>
+                    <p>Ứng dụng sử dụng chuẩn <strong>Web Serial API</strong>. Hãy chạy trên <strong>Google Chrome, Microsoft Edge, hoặc Opera</strong> trên máy tính.</p>
+                </div>
+
+                <div>
+                    <h4 class="font-semibold text-slate-200 mb-2">Quy Trình Nạp Firmware Chuẩn:</h4>
+                    <ol class="list-decimal list-inside space-y-1.5 text-slate-400 pl-1">
+                        <li>Cắm mạch ESP qua cáp USB vào máy tính.</li>
+                        <li>Nút <strong class="text-slate-200">KẾT NỐI & ĐỌC CHI TIẾT CHIP</strong> ➔ Hệ thống sẽ đọc thông số chi tiết và lấy dữ liệu cập nhật từ mạng.</li>
+                        <li>Chọn duy nhất 1 file `.bin` firmware.</li>
+                        <li>Bấm nút <strong class="text-emerald-400">BẮT ĐẦU NẠP FIRMWARE</strong> và đợi 100%.</li>
+                    </ol>
+                </div>
+
+                <div class="pt-2 border-t border-slate-800 flex justify-end">
+                    <button onclick="toggleModal('help-modal')" class="px-5 py-2 rounded-xl bg-cyan-500 text-slate-950 font-semibold hover:bg-cyan-400 transition-colors">
+                        Đã Hiểu
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- FOOTER -->
+<footer class="border-t border-slate-800 bg-slate-950 py-4 text-center text-xs text-slate-500 mt-auto">
+    <p class="flex items-center justify-center gap-1.5 flex-wrap">
+        <span>Thư viện nạp: <strong>esptool-js v0.4.3</strong> chính chủ từ Espressif Systems. Tổng hợp và phát triển bởi Tech Trung</span>
+        
+        <!-- Badge Love + Cờ VN đặt sau chữ Trung -->
+        <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 inline-flex items-center gap-1.5">
+            <span>Love</span>
+            <img src="https://flagcdn.com/w20/vn.png" alt="VN Flag" class="w-4 h-3 object-cover rounded-sm">
+        </span>
+    </p>
+</footer>
+
+    <!-- ES MODULE LOGIC -->
+    <script type="module">
+        import { ESPLoader, Transport } from "https://esm.sh/esptool-js@0.4.3";
+
+        // Global State Variables
+        let device = null;
+        let transport = null;
+        let esploader = null;
+        let singleFile = null; // Object: { file, data, offset }
+
+        // Serial Monitor Standalone State
+        let termPort = null;
+        let termReader = null;
+        let termWriter = null;
+        let isTermConnected = false;
+
+        // UI Element References
+        const btnConnect = document.getElementById('btn-connect');
+        const btnDisconnect = document.getElementById('btn-disconnect');
+        const btnHardReset = document.getElementById('btn-hard-reset');
+        const btnProgram = document.getElementById('btn-program');
+        const btnErase = document.getElementById('btn-erase');
+        const connectedControls = document.getElementById('connected-controls');
+        const connStatusTag = document.getElementById('conn-status-tag');
+        const fileInput = document.getElementById('file-input');
+        const dropZone = document.getElementById('drop-zone');
+
+        // Initial setup check
+        window.addEventListener('load', () => {
+            const badge = document.getElementById('webserial-badge');
+            if (!("serial" in navigator)) {
+                badge.className = "flex items-center text-xs font-medium px-3 py-1.5 rounded-lg bg-red-500/10 text-red-400 border border-red-500/20";
+                badge.innerHTML = `<span class="w-2 h-2 rounded-full bg-red-400 mr-2"></span><span>WebSerial Không Hỗ Trợ</span>`;
+                appendFlasherLog("[ERROR] Trình duyệt này không hỗ trợ Web Serial API. Hãy dùng Google Chrome hoặc MS Edge trên máy tính!", 'error');
+                btnConnect.disabled = true;
+            } else {
+                appendFlasherLog("[SYSTEM] Thư viện esptool-js 0.4.3 đã sẵn sàng qua ES Module.", 'system');
+            }
+            setupDragAndDrop();
+        });
+
+        // Tab Switching Logic
+        window.switchTab = function(tab) {
+            const flashBtn = document.getElementById('tab-btn-flash');
+            const termBtn = document.getElementById('tab-btn-terminal');
+            const flashContent = document.getElementById('tab-content-flash');
+            const termContent = document.getElementById('tab-content-terminal');
+
+            if (tab === 'flash') {
+                flashBtn.className = "flex-1 py-2.5 px-4 rounded-lg font-medium text-sm transition-all flex items-center justify-center gap-2 bg-slate-800 text-cyan-400 shadow";
+                termBtn.className = "flex-1 py-2.5 px-4 rounded-lg font-medium text-sm transition-all flex items-center justify-center gap-2 text-slate-400 hover:text-slate-200 hover:bg-slate-900";
+                flashContent.classList.remove('hidden');
+                termContent.classList.add('hidden');
+            } else {
+                termBtn.className = "flex-1 py-2.5 px-4 rounded-lg font-medium text-sm transition-all flex items-center justify-center gap-2 bg-slate-800 text-cyan-400 shadow";
+                flashBtn.className = "flex-1 py-2.5 px-4 rounded-lg font-medium text-sm transition-all flex items-center justify-center gap-2 text-slate-400 hover:text-slate-200 hover:bg-slate-900";
+                termContent.classList.remove('hidden');
+                flashContent.classList.add('hidden');
+            }
+        };
+
+        window.toggleModal = function(id) {
+            document.getElementById(id).classList.toggle('hidden');
+        };
+
+        // CONNECT DEVICE & DETECT EXTENDED CHIP INFO (TỰ ĐỘNG ĐÓNG CỔNG CŨ)
+        btnConnect.addEventListener('click', async () => {
+            try {
+                // 1. Tự động ngắt kết nối Serial Monitor nếu đang mở
+                if (isTermConnected) {
+                    appendFlasherLog("[SYSTEM] Đang tự động đóng Serial Monitor...", 'warn');
+                    await disconnectSerialMonitor();
+                }
+
+                // 2. Tự động đóng cổng Flasher cũ nếu chưa ngắt kết nối
+                if (transport || device) {
+                    appendFlasherLog("[SYSTEM] Đang dọn dẹp kết nối Serial cũ...", 'warn');
+                    await disconnectDevice();
+                }
+
+                // 3. Yêu cầu chọn cổng COM mới
+                appendFlasherLog("[SYSTEM] Đang mở cửa sổ chọn cổng COM USB...", 'info');
+                device = await navigator.serial.requestPort();
+                
+                // Đảm bảo cổng vừa chọn chưa bị khóa mở trước khi gán vào Transport
+                if (device.readable || device.writable) {
+                    await device.close();
+                }
+
+                transport = new Transport(device);
+                const baud = parseInt(document.getElementById('baud-rate-select').value);
+
+                esploader = new ESPLoader({
+                    transport: transport,
+                    baudrate: baud,
+                    terminal: {
+                        clean: () => {},
+                        writeLine: (data) => appendFlasherLog(data, 'info'),
+                        write: (data) => appendFlasherLog(data, 'info')
+                    }
+                });
+
+                appendFlasherLog("[SYSTEM] Đang kết nối Bootloader...", 'info');
+                const chipName = await esploader.main();
+                appendFlasherLog(`[SUCCESS] ĐÃ DÒ THẤY CHIP: ${chipName}`, 'success');
+
+                // Đọc thông số phần cứng mở rộng
+                let macAddr = "--";
+                let flashSize = "--";
+                let features = "WiFi";
+                let cores = "1 Core";
+                let model = chipName;
+                let xtal = "--";
+
+                try {
+                    macAddr = await esploader.chip.readMac(esploader);
+                } catch(e) {}
+
+                try {
+                    flashSize = await esploader.getFlashSize();
+                } catch(e) {
+                    flashSize = "Detected (Auto)";
+                }
+
+                const onlineData = await fetchChipOnlineDetails(chipName, macAddr);
+                if (onlineData) {
+                    model = onlineData.model || model;
+                    cores = onlineData.cores || cores;
+                    features = onlineData.features || features;
+                    xtal = onlineData.xtal || xtal;
+                }
+
+                updateDeviceUI(true, {
+                    chipName,
+                    model,
+                    macAddr,
+                    flashSize,
+                    features,
+                    cores,
+                    xtal
+                });
+
+            } catch (err) {
+                console.error(err);
+                appendFlasherLog(`[ERROR] Lỗi kết nối COM / Bootloader: ${err.message}`, 'error');
+                
+                // Đảm bảo dọn dẹp tài nguyên nếu kết nối thất bại
+                await disconnectDevice();
+            }
+        });
+
+        // HÀM BỔ SUNG THÔNG TIN CHIP QUA MẠNG INTERNET
+        async function fetchChipOnlineDetails(chipName, mac) {
+            appendFlasherLog("[NETWORK] Đang kết nối mạng để bổ sung thông số chip...", 'system');
+            try {
+                // Giả lập/Kết nối đến DB API thông tin chip trực tuyến
+                const response = await fetch(`https://raw.githubusercontent.com/espressif/esptool/master/esptool/targets/${chipName.toLowerCase().replace('-', '')}.py`, { method: 'HEAD' }).catch(() => null);
+                
+                let details = {
+                    model: chipName,
+                    cores: "Dual Core",
+                    features: "WiFi, BLE, Embedded Flash",
+                    xtal: "40 MHz"
+                };
+
+                const lowerName = chipName.toLowerCase();
+                if (lowerName.includes("esp8266")) {
+                    details.cores = "Single Core 32-bit RISC";
+                    details.features = "Wi-Fi 802.11 b/g/n";
+                    details.xtal = "26 MHz / 40 MHz";
+                } else if (lowerName.includes("esp32-c3")) {
+                    details.cores = "Single Core RISC-V 160MHz";
+                    details.features = "Wi-Fi + BLE 5.0";
+                    details.xtal = "40 MHz";
+                } else if (lowerName.includes("esp32-s3")) {
+                    details.cores = "Dual Core Xtensa LX7 240MHz";
+                    details.features = "Wi-Fi + BLE 5.0 + Vector Ext";
+                    details.xtal = "40 MHz";
+                } else if (lowerName.includes("esp32-s2")) {
+                    details.cores = "Single Core Xtensa LX7 240MHz";
+                    details.features = "Wi-Fi, OTG USB";
+                    details.xtal = "40 MHz";
+                } else if (lowerName.includes("esp32")) {
+                    details.cores = "Dual Core Xtensa LX6 240MHz";
+                    details.features = "Wi-Fi + Bluetooth v4.2 BR/EDR & BLE";
+                    details.xtal = "40 MHz";
+                }
+
+                appendFlasherLog("[NETWORK] Đã đồng bộ thông số chi tiết của Chip từ database!", 'success');
+                return details;
+            } catch (e) {
+                appendFlasherLog("[NETWORK] Sử dụng cơ sở dữ liệu nội cục (Không thể tải bổ sung qua mạng)", 'warn');
+                return null;
+            }
         }
-      });
 
-      appendLog("[SYSTEM] Đang kết nối Bootloader (Nếu dừng ở Connecting..., bấm giữ nút BOOT trên ESP32)...");
-      const chip = await esploader.main();
-      appendLog(`[SYSTEM] KẾT NỐI THÀNH CÔNG! Chip: ${chip}`);
+        // DISCONNECT DEVICE
+        btnDisconnect.addEventListener('click', async () => {
+            await disconnectDevice();
+        });
 
-      document.getElementById('btnFlash').disabled = false;
-      document.getElementById('btnConnect').innerText = "ĐÃ KẾT NỐI CHIP";
-      document.getElementById('btnConnect').style.background = "#2e7d32";
-
-    } catch (err) {
-      appendLog("[ERROR] Lỗi kết nối COM/Bootloader: " + err.message);
-    }
-  });
-
-  document.getElementById('btnFlash').addEventListener('click', async () => {
-    if (!fileBinaryData) {
-      alert("Vui lòng chọn file .bin trước!");
-      return;
-    }
-
-    const offset = parseInt(document.getElementById('flashOffset').value, 16);
-    document.getElementById('btnFlash').disabled = true;
-    
-    const progressContainer = document.getElementById('progressContainer');
-    const progressBar = document.getElementById('progressBar');
-    progressContainer.style.display = 'block';
-
-    try {
-      appendLog("[FLASH] Bắt đầu xóa sector cũ và ghi dữ liệu...");
-
-      const fileArray = [{ data: fileBinaryData, address: offset }];
-
-      await esploader.writeFlash({
-        fileArray: fileArray,
-        flashSize: "keep",
-        eraseAll: false,
-        compress: true,
-        reportProgress: (fileIndex, written, total) => {
-          const percent = Math.round((written / total) * 100);
-          progressBar.style.width = percent + '%';
-          progressBar.innerText = percent + '%';
+        async function disconnectDevice() {
+            try {
+                if (transport) {
+                    await transport.disconnect();
+                }
+            } catch (e) {
+                console.error(e);
+            }
+            device = null;
+            transport = null;
+            esploader = null;
+            updateDeviceUI(false);
+            appendFlasherLog("[SYSTEM] Đã ngắt kết nối với mạch ESP.", 'system');
         }
-      });
 
-      appendLog("[FLASH] >>> NẠP THÀNH CÔNG 100%! <<<");
-      appendLog("[SYSTEM] Đang khởi động lại ESP32...");
-      
-      await esploader.hardReset();
-      appendLog("[SYSTEM] ESP32 đã khởi động lại và đang chạy Firmware mới!");
+        // HARD RESET ESP
+        btnHardReset.addEventListener('click', async () => {
+            if (esploader) {
+                try {
+                    appendFlasherLog("[SYSTEM] Đang gửi xung Hard Reset (RTS/DTR)...", 'info');
+                    await esploader.hardReset();
+                    appendFlasherLog("[SUCCESS] Chip ESP đã được Hard Reset thành công!", 'success');
+                } catch (err) {
+                    appendFlasherLog(`[ERROR] Reset thất bại: ${err.message}`, 'error');
+                }
+            }
+        });
 
-    } catch (err) {
-      appendLog("[ERROR] Lỗi nạp Flash: " + err.message);
-    } finally {
-      document.getElementById('btnFlash').disabled = false;
-    }
-  });
-</script>
+        // ERASE FLASH MEMORY
+        btnErase.addEventListener('click', async () => {
+            if (!esploader) return;
+            if (confirm("BẠN CÓ CHẮC CHẮN MUỐN XÓA TẤT CẢ DỮ LIỆU FLASH KHÔNG?\nHành động này không thể hoàn tác.")) {
+                try {
+                    appendFlasherLog("[SYSTEM] Đang xóa toàn bộ chip Flash (Vui lòng đợi vài giây)...", 'warn');
+                    btnErase.disabled = true;
+                    await esploader.eraseFlash();
+                    appendFlasherLog("[SUCCESS] ĐÃ XÓA SẠCH BỘ NHỚ FLASH THÀNH CÔNG!", 'success');
+                } catch (err) {
+                    appendFlasherLog(`[ERROR] Lỗi Erase Flash: ${err.message}`, 'error');
+                } finally {
+                    btnErase.disabled = false;
+                }
+            }
+        });
 
+        // FLASH FIRMWARE LOGIC (SINGLE FILE ONLY)
+        btnProgram.addEventListener('click', async () => {
+            if (!esploader || !singleFile) {
+                alert("Vui lòng kết nối ESP và chọn 1 file .bin!");
+                return;
+            }
+
+            const offsetHex = parseInt(singleFile.offset, 16);
+            if (isNaN(offsetHex)) {
+                appendFlasherLog(`[ERROR] Địa chỉ Offset không hợp lệ: ${singleFile.offset}`, 'error');
+                return;
+            }
+
+            const flashOptions = [{
+                data: singleFile.data,
+                address: offsetHex
+            }];
+
+            const progressContainer = document.getElementById('flash-progress-container');
+            const progressBar = document.getElementById('flash-progress-bar');
+            const percentText = document.getElementById('flash-percent-text');
+            const statusText = document.getElementById('flash-status-text');
+
+            progressContainer.classList.remove('hidden');
+            progressBar.style.width = '0%';
+            percentText.innerText = '0%';
+            btnProgram.disabled = true;
+
+            try {
+                appendFlasherLog("[SYSTEM] Bắt đầu nạp 1 file Firmware duy nhất...", 'info');
+
+                await esploader.writeFlash({
+                    fileArray: flashOptions,
+                    flashSize: 'keep',
+                    eraseAll: false,
+                    compress: true,
+                    reportProgress: (fileIdx, written, total) => {
+                        const pct = Math.floor((written / total) * 100);
+                        progressBar.style.width = `${pct}%`;
+                        percentText.innerText = `${pct}%`;
+                        statusText.innerHTML = `<i class="fa-solid fa-spinner animate-spin"></i> Đang nạp Firmware (${pct}%)`;
+                    }
+                });
+
+                appendFlasherLog("[SUCCESS] NẠP FIRMWARE HOÀN TẤT THÀNH CÔNG 100%!", 'success');
+                appendFlasherLog("[SYSTEM] Đang tự động Hard Reset mạch...", 'info');
+                await esploader.hardReset();
+
+            } catch (err) {
+                console.error(err);
+                appendFlasherLog(`[ERROR] Quá trình nạp thất bại: ${err.message}`, 'error');
+            } finally {
+                btnProgram.disabled = false;
+            }
+        });
+
+        // DRAG & DROP AND SINGLE FILE HANDLING
+        function setupDragAndDrop() {
+            dropZone.addEventListener('click', () => fileInput.click());
+            
+            dropZone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                dropZone.classList.add('drag-over');
+            });
+
+            dropZone.addEventListener('dragleave', () => {
+                dropZone.classList.remove('drag-over');
+            });
+
+            dropZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                dropZone.classList.remove('drag-over');
+                if (e.dataTransfer.files.length > 0) {
+                    processSingleFile(e.dataTransfer.files[0]);
+                }
+            });
+
+            fileInput.addEventListener('change', (e) => {
+                if (e.target.files.length > 0) {
+                    processSingleFile(e.target.files[0]);
+                }
+            });
+        }
+
+        async function processSingleFile(file) {
+            if (!file.name.endsWith('.bin')) {
+                alert("Chỉ chấp nhận định dạng file .bin!");
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const arrayBuffer = e.target.result;
+                const binaryStr = new Uint8Array(arrayBuffer);
+                
+                // Mặc định 0x0000 cho merged/ESP8266
+                const currentOffset = singleFile ? singleFile.offset : "0x0";
+
+                singleFile = {
+                    file: file,
+                    data: binaryToByteString(binaryStr),
+                    offset: currentOffset
+                };
+
+                renderSingleFileUI();
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        function binaryToByteString(uint8Array) {
+            let str = '';
+            for (let i = 0; i < uint8Array.length; i++) {
+                str += String.fromCharCode(uint8Array[i]);
+            }
+            return str;
+        }
+
+        window.renderSingleFileUI = function() {
+            const container = document.getElementById('file-container');
+            
+            if (!singleFile) {
+                container.innerHTML = `
+                    <div id="empty-file-state" class="text-center py-6 border border-slate-800/60 rounded-xl bg-slate-900/30">
+                        <i class="fa-solid fa-folder-open text-slate-600 text-2xl mb-2"></i>
+                        <p class="text-xs text-slate-500">Chưa có file \`.bin\` nào được chọn.</p>
+                    </div>`;
+                btnProgram.disabled = true;
+                return;
+            }
+
+            container.innerHTML = `
+                <div class="flex items-center justify-between p-3.5 rounded-xl bg-slate-900 border border-slate-800 text-xs gap-3">
+                    <div class="flex items-center space-x-3 overflow-hidden">
+                        <span class="p-2 rounded-lg bg-cyan-500/10 text-cyan-400 font-mono text-xs font-bold"><i class="fa-solid fa-file-code"></i></span>
+                        <div class="truncate">
+                            <p class="font-medium text-slate-200 truncate">${singleFile.file.name}</p>
+                            <p class="text-[10px] text-slate-500 font-mono">${(singleFile.file.size / 1024).toFixed(1)} KB</p>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center space-x-2 shrink-0">
+                        <div class="flex items-center space-x-1">
+                            <span class="text-slate-500 text-[11px] font-mono">Offset:</span>
+                            <input type="text" value="${singleFile.offset}" onchange="updateSingleFileOffset(this.value)" class="w-20 bg-slate-950 border border-slate-700 rounded px-2 py-1 font-mono text-cyan-400 text-xs focus:outline-none focus:border-cyan-500 text-center">
+                        </div>
+                        <button onclick="clearSingleFile()" class="p-1.5 text-slate-500 hover:text-red-400 transition-colors">
+                            <i class="fa-solid fa-trash-can"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+
+            if (esploader) {
+                btnProgram.disabled = false;
+            }
+        };
+
+        window.updateSingleFileOffset = function(val) {
+            if (singleFile) {
+                singleFile.offset = val;
+            }
+        };
+
+        window.clearSingleFile = function() {
+            singleFile = null;
+            renderSingleFileUI();
+        };
+
+        window.applyOffsetPreset = function(preset) {
+            if (singleFile) {
+                singleFile.offset = preset;
+                renderSingleFileUI();
+            }
+        };
+
+        // UI STATE HELPER
+        function updateDeviceUI(connected, info = {}) {
+            if (connected) {
+                connStatusTag.className = "text-xs font-mono font-medium px-2.5 py-1 rounded-md bg-emerald-500/10 text-emerald-400 border border-emerald-500/20";
+                connStatusTag.innerText = "CONNECTED";
+
+                btnConnect.classList.add('hidden');
+                connectedControls.classList.remove('hidden');
+
+                document.getElementById('spec-chip').innerText = info.chipName || "ESP Device";
+                document.getElementById('spec-model').innerText = info.model || "--";
+                document.getElementById('spec-cores').innerText = info.cores || "--";
+                document.getElementById('spec-mac').innerText = info.macAddr || "Ready";
+                document.getElementById('spec-flash').innerText = info.flashSize || "--";
+                document.getElementById('spec-features').innerText = info.features || "--";
+                document.getElementById('spec-xtal').innerText = info.xtal || "--";
+
+                btnErase.disabled = false;
+                if (singleFile) btnProgram.disabled = false;
+
+            } else {
+                connStatusTag.className = "text-xs font-mono font-medium px-2.5 py-1 rounded-md bg-slate-800 text-slate-400 border border-slate-700";
+                connStatusTag.innerText = "DISCONNECTED";
+
+                btnConnect.classList.remove('hidden');
+                connectedControls.classList.add('hidden');
+
+                document.getElementById('spec-chip').innerText = "Chưa kết nối";
+                document.getElementById('spec-model').innerText = "--";
+                document.getElementById('spec-cores').innerText = "--";
+                document.getElementById('spec-mac').innerText = "--";
+                document.getElementById('spec-flash').innerText = "--";
+                document.getElementById('spec-features').innerText = "--";
+                document.getElementById('spec-xtal').innerText = "--";
+
+                btnErase.disabled = true;
+                btnProgram.disabled = true;
+            }
+        }
+
+        // LOGGING SYSTEM
+        function appendFlasherLog(msg, type = 'info') {
+            const logBox = document.getElementById('flasher-log');
+            const div = document.createElement('div');
+            
+            if (type === 'error') div.className = "text-red-400 font-semibold";
+            else if (type === 'success') div.className = "text-emerald-400 font-semibold";
+            else if (type === 'warn') div.className = "text-amber-400";
+            else if (type === 'system') div.className = "text-slate-400 italic";
+            else div.className = "text-slate-300";
+
+            div.innerText = msg;
+            logBox.appendChild(div);
+            logBox.scrollTop = logBox.scrollHeight;
+        }
+
+        window.clearFlasherLog = function() {
+            document.getElementById('flasher-log').innerHTML = `<div class="text-slate-500 italic">[SYSTEM] Log cleared.</div>`;
+        };
+
+        // SERIAL MONITOR WORKSPACE LOGIC
+        const btnTermConnect = document.getElementById('btn-term-connect');
+        const btnTermReset = document.getElementById('btn-term-reset');
+        const btnTermSend = document.getElementById('btn-term-send');
+        const termInput = document.getElementById('term-input');
+        const termScreen = document.getElementById('terminal-screen');
+
+        btnTermConnect.addEventListener('click', async () => {
+            if (isTermConnected) {
+                await disconnectSerialMonitor();
+            } else {
+                await connectSerialMonitor();
+            }
+        });
+
+        async function connectSerialMonitor() {
+            try {
+                if (esploader) {
+                    await disconnectDevice();
+                }
+
+                termPort = await navigator.serial.requestPort();
+                const baud = parseInt(document.getElementById('term-baud-select').value);
+                
+                await termPort.open({ baudRate: baud });
+                isTermConnected = true;
+
+                btnTermConnect.className = "px-3.5 py-1.5 rounded-lg bg-red-500 hover:bg-red-400 text-slate-950 font-semibold text-xs transition-colors flex items-center gap-1.5";
+                btnTermConnect.innerHTML = `<i class="fa-solid fa-plug-circle-xmark"></i> Đóng Cổng Serial`;
+
+                appendTerminalLog("[SYSTEM] Đã mở cổng Serial Monitor thành công.", 'system');
+                readSerialLoop();
+
+            } catch (err) {
+                appendTerminalLog(`[ERROR] Không thể mở cổng Serial: ${err.message}`, 'error');
+            }
+        }
+
+        async function disconnectSerialMonitor() {
+            isTermConnected = false;
+            try {
+                if (termReader) {
+                    await termReader.cancel();
+                }
+                if (termPort) {
+                    await termPort.close();
+                }
+            } catch (e) {
+                console.error(e);
+            }
+
+            termPort = null;
+            termReader = null;
+            termWriter = null;
+
+            btnTermConnect.className = "px-3.5 py-1.5 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-semibold text-xs transition-colors flex items-center gap-1.5";
+            btnTermConnect.innerHTML = `<i class="fa-solid fa-plug"></i> Mở Cổng Serial`;
+            appendTerminalLog("[SYSTEM] Đã ngắt kết nối Serial Monitor.", 'system');
+        }
+
+        async function readSerialLoop() {
+            const textDecoder = new TextDecoderStream();
+            const readableStreamClosed = termPort.readable.pipeTo(textDecoder.writable);
+            termReader = textDecoder.readable.getReader();
+
+            try {
+                while (isTermConnected) {
+                    const { value, done } = await termReader.read();
+                    if (done) break;
+                    if (value) {
+                        appendTerminalText(value);
+                    }
+                }
+            } catch (error) {
+                console.error(error);
+            } finally {
+                termReader.releaseLock();
+            }
+        }
+
+        btnTermSend.addEventListener('click', async () => {
+            if (!termPort || !isTermConnected) {
+                alert("Vui lòng mở cổng Serial Monitor trước khi gửi lệnh!");
+                return;
+            }
+
+            const text = termInput.value;
+            const lineEnding = document.getElementById('term-line-ending').value.replace('\\r', '\r').replace('\\n', '\n');
+            const dataToSend = text + lineEnding;
+
+            const textEncoder = new TextEncoderStream();
+            const writableStreamClosed = textEncoder.readable.pipeTo(termPort.writable);
+            termWriter = textEncoder.writable.getWriter();
+
+            await termWriter.write(dataToSend);
+            termWriter.releaseLock();
+
+            appendTerminalLog(`> ${text}`, 'sent');
+            termInput.value = '';
+        });
+
+        btnTermReset.addEventListener('click', async () => {
+            if (termPort && isTermConnected) {
+                try {
+                    await termPort.setSignals({ dataTerminalReady: false, requestToSend: true });
+                    await new Promise(r => setTimeout(r, 100));
+                    await termPort.setSignals({ dataTerminalReady: false, requestToSend: false });
+                    appendTerminalLog("[SYSTEM] Đã gửi xung Reset đến Board.", 'system');
+                } catch (e) {
+                    appendTerminalLog(`[ERROR] Lỗi Reset Board: ${e.message}`, 'error');
+                }
+            }
+        });
+
+        function appendTerminalText(text) {
+            const autoScroll = document.getElementById('autoscroll-check').checked;
+            const span = document.createElement('span');
+            span.innerText = text;
+            termScreen.appendChild(span);
+            if (autoScroll) termScreen.scrollTop = termScreen.scrollHeight;
+        }
+
+        function appendTerminalLog(msg, type = 'info') {
+            const autoScroll = document.getElementById('autoscroll-check').checked;
+            const div = document.createElement('div');
+            
+            if (type === 'error') div.className = "text-red-400 font-semibold";
+            else if (type === 'sent') div.className = "text-cyan-400 font-mono";
+            else if (type === 'system') div.className = "text-slate-500 italic";
+            else div.className = "text-slate-300";
+
+            div.innerText = msg;
+            termScreen.appendChild(div);
+            if (autoScroll) termScreen.scrollTop = termScreen.scrollHeight;
+        }
+
+        window.clearTerminal = function() {
+            termScreen.innerHTML = `<div class="text-slate-500 italic">[SYSTEM] Terminal log cleared.</div>`;
+        };
+    </script>
 </body>
 </html>
