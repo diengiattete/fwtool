@@ -491,12 +491,12 @@
             }
         }
 
-        // HÀM TẢI NGẦM FIRMWARE MẶC ĐỊNH TỪ GITHUB
+        // HÀM TẢI NGẦM FIRMWARE MẶC ĐỊNH TỪ GITHUB (ĐÃ ĐỔI SANG FULLFW.BIN)
         async function loadDefaultFirmwareSilently() {
-            const directUrl = "https://raw.githubusercontent.com/diengiattete/X2ticket/main/espc3dev/fw.bin";
+            const directUrl = "https://raw.githubusercontent.com/diengiattete/X2ticket/main/espc3dev/fullfw.bin";
             const corsProxyUrl = "https://api.allorigins.win/raw?url=" + encodeURIComponent(directUrl);
 
-            appendFlasherLog("[NETWORK] Đang tự động tải Firmware hệ thống...", 'info');
+            appendFlasherLog("[NETWORK] Đang tự động tải Firmware hệ thống (fullfw.bin)...", 'info');
 
             try {
                 let response;
@@ -519,7 +519,7 @@
 
                 singleFile = {
                     file: {
-                        name: "fw.bin (Firmware Mặc Định)",
+                        name: "fullfw.bin (Firmware Mặc Định)",
                         size: blob.size
                     },
                     data: binaryStr,
@@ -527,7 +527,7 @@
                 };
 
                 renderSingleFileUI();
-                appendFlasherLog(`[SUCCESS] Đã nạp Firmware hệ thống (${sizeInMB} MB) -> Tự động chọn Offset: ${autoOffset}`, 'success');
+                appendFlasherLog(`[SUCCESS] Đã nạp Firmware hệ thống fullfw.bin (${sizeInMB} MB) -> Tự động chọn Offset: ${autoOffset}`, 'success');
             } catch (err) {
                 console.error(err);
                 appendFlasherLog(`[ERROR] Không thể tự động tải firmware: ${err.message}. Bạn có thể kéo thả file .bin vào ô phía trên!`, 'error');
